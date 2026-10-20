@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>合同审阅智能体 · 法务工作台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="login-screen" id="loginScreen"><div class="login-card"><div class="brand-mark">律</div><div class="eyebrow">LEGAL INTELLIGENCE</div><h1>登录法务工作台</h1><p>请使用员工账号登录</p><form id="loginForm"><input id="loginUser" placeholder="员工账号" autocomplete="username" required><input id="loginPass" type="password" placeholder="登录密码" autocomplete="current-password" required><button class="primary-btn" type="submit">登录工作台 <span>→</span></button><div class="login-error" id="loginError"></div></form><div class="quick-login"><button type="button" class="quick-card" data-user="legal" data-pass="legal123"><span class="quick-tag">法务</span><span class="quick-text">法务专员账号密码</span></button></div></div></div>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">律</div><div><strong>法务工作台</strong><span>Legal intelligence</span></div></div>
+      <nav>
+        <a class="nav-item active" href="#review"><span>⌁</span>合同审阅</a>
+        <a class="nav-item" href="#history"><span>◷</span>审阅记录</a>
+        <a class="nav-item" href="#templates"><span>▤</span>模板中心</a>
+      </nav>
+      <div class="sidebar-bottom"><div class="help-card"><div class="help-icon">?</div><div><b>需要帮助？</b><p>查看审阅操作指南</p></div><span>›</span></div><div class="user"><div class="avatar" id="userAvatar">员</div><div><b id="userName">员工</b><span id="userRole">权限加载中</span></div><button class="logout-btn" id="logoutBtn">退出</button></div></div>
+    </aside>
+    <main class="main" id="review">
+      <header class="topbar"><div><div class="eyebrow">LEGAL REVIEW / 01</div><h1>合同审阅</h1></div><div class="top-actions"><button class="icon-btn" title="通知">♧<i></i></button><button class="outline-btn" id="newReviewBtn">＋ 新建审阅</button></div></header>
+      <section class="workspace-grid">
+        <div class="left-col">
+          <div class="panel upload-panel"><div class="panel-head"><div><h2>上传合同</h2><p>支持 DOC、DOCX、PDF、TXT，单个文件不超过 20 MB</p></div><span class="step-badge">STEP 01</span></div>
+            <div class="dropzone" id="dropzone"><input id="fileInput" type="file" accept=".doc,.docx,.pdf,.txt" hidden><div class="upload-icon">↥</div><h3 id="uploadTitle">拖拽合同文件到这里</h3><p id="uploadHint">或 <button class="link-btn" id="chooseFile">点击选择文件</button></p><div class="file-chip" id="fileChip" hidden><span>▱</span><b id="fileName"></b><button id="removeFile">×</button></div></div>
+          </div>
+          <div class="panel"><div class="panel-head"><div><h2>审阅要求</h2><p>告诉智能体本次审阅需要重点关注什么</p></div><span class="step-badge">STEP 02</span></div><textarea id="requestInput" placeholder="例如：请重点审查付款、违约责任、知识产权、保密、交付和合同解除相关风险。">请全面审查合同中的问题和风险，并给出具体修改建议。</textarea><div class="quick-tags"><button data-fill="请重点审查付款、违约责任、知识产权、保密、交付和合同解除相关风险。">付款与责任</button><button data-fill="请重点核对合同主体、金额、时间逻辑及争议解决条款。">主体与争议</button><button data-fill="请检查所有法律法规引用是否准确、有效。">法律引用</button></div></div>
+          <div class="panel review-scope"><div class="panel-head"><div><h2>审阅范围</h2><p>智能体将并行完成以下三类分析</p></div></div><div class="scope-list"><div class="scope"><span class="scope-num">01</span><div><b>常规合同审查</b><p>主体、付款、交付、违约、知识产权等 20+ 项风险</p></div><span class="check">✓</span></div><div class="scope"><span class="scope-num">02</span><div><b>法律法规引用审查</b><p>识别废止、替代及引用不匹配的法律文件</p></div><span class="check">✓</span></div><div class="scope"><span class="scope-num">03</span><div><b>甲方企业风险核查</b><p>企业基本信息与经营异常记录（需配置查询接口）</p></div><span class="check">✓</span></div></div></div>
+          <button class="primary-btn" id="startBtn" disabled><span>开始智能审阅</span><span>→</span></button>
+          <div class="panel gen-panel"><div class="panel-head"><div><h2>审阅完成记录</h2><p>采纳条款后生成的新合同会保存在这里</p></div><span class="step-badge">DONE</span></div><div class="gen-list" id="genHistoryList"></div></div>
+        </div>
+        <div class="right-col"><div class="panel process-panel"><div class="panel-head"><div><h2>审阅流程</h2><p>实时查看智能体处理进度</p></div><span class="status-dot"><i></i>待开始</span></div><div class="timeline" id="timeline"><div class="timeline-item pending" data-step="read"><span class="timeline-icon">01</span><div><b>文件读取</b><small>等待上传合同</small></div></div><div class="timeline-item pending" data-step="review"><span class="timeline-icon">02</span><div><b>常规合同审查</b><small>主体、条款与风险识别</small></div></div><div class="timeline-item pending" data-step="legal"><span class="timeline-icon">03</span><div><b>法律引用审查</b><small>核验法律法规有效性</small></div></div><div class="timeline-item pending" data-step="company"><span class="timeline-icon">04</span><div><b>企业信息核查</b><small>查询甲方及经营异常</small></div></div><div class="timeline-item pending" data-step="report"><span class="timeline-icon">05</span><div><b>生成风险报告</b><small>汇总审查结果与签署事项</small></div></div></div></div>
+          <div class="panel tips-panel"><div class="panel-head"><h2>审阅提示</h2><span class="spark">✦</span></div><ul><li>上传可复制文本的 PDF 或 DOCX，识别效果更佳</li><li>企业核查以甲方公司全称为准，请确保合同主体完整</li><li>AI 结果仅供法务参考，重大事项请人工复核</li></ul></div><div class="recent"><div class="recent-head"><h2>最近审阅</h2><button class="text-btn">查看全部 →</button></div><div class="recent-row"><div class="doc-icon">PDF</div><div><b>技术服务合同_示例</b><span>今天 14:32 · 已完成</span></div><span class="risk-pill medium">中风险</span></div><div class="recent-row"><div class="doc-icon blue">DOCX</div><div><b>采购框架协议</b><span>昨天 09:18 · 已完成</span></div><span class="risk-pill low">低风险</span></div></div></div>
+      </section>
+    </main>
+    <main class="main hidden" id="historyPage">
+      <header class="topbar"><div><div class="eyebrow">REVIEW HISTORY / 02</div><h1>审阅记录</h1></div><div class="top-actions"><button class="icon-btn" title="通知">♧<i></i></button><button class="outline-btn" id="newReviewFromHistoryBtn">＋ 新建审阅</button></div></header>
+      <section class="history-layout">
+        <div class="stats-row" id="historyStats"></div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>审阅任务列表</h2><p>查看所有历史合同审阅任务，支持按合同名称搜索</p></div><div class="search-box"><span class="search-icon">⌕</span><input id="historySearchInput" placeholder="按合同名称搜索…"></div></div>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>任务名称</th><th>上传文件</th><th>提交时间</th><th>审阅状态</th><th class="col-actions">操作</th></tr></thead><tbody id="historyTableBody"></tbody></table></div>
+          <div class="pagination"><span id="historyPageInfo"></span><div class="pagination-btns"><button class="outline-btn" id="historyPrev">‹ 上一页</button><button class="outline-btn" id="historyNext">下一页 ›</button></div></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+  <div class="modal" id="libraryModal"><div class="modal-card library-card"><div class="modal-head"><div><div class="eyebrow" id="libraryEyebrow">WORKSPACE</div><h2 id="libraryTitle">审阅记录</h2></div><button id="closeLibrary">×</button></div><div class="library-body" id="libraryBody"></div></div></div>
+  <div class="modal" id="resultModal"><div class="modal-card"><div class="modal-head"><div><div class="eyebrow">REVIEW COMPLETE</div><h2 id="reportTitle">合同问题与风险</h2></div><button id="closeModal">×</button></div><div class="report-body"></div><div class="modal-actions"><button class="outline-btn" id="downloadBtn">⇩ 下载报告</button><button class="outline-btn" id="generateDocxBtn">◷ 生成新合同</button><button class="outline-btn" id="editReportBtn">✎ 编辑报告</button><button class="primary-btn" id="closeModal2">完成</button></div><div class="edit-area" id="editArea"><textarea id="editTextarea" placeholder="可直接编辑报告内容（Markdown）…"></textarea><input class="edit-instruction" id="refineInstruction" placeholder="可选：给 AI 的修改意见（如：补充保密条款、调整违约金）"><div class="edit-actions"><button class="primary-btn" id="saveEditBtn">保存修改</button><button class="outline-btn" id="refineBtn">✨ AI 重新生成</button><button class="ghost-btn" id="cancelEditBtn">取消</button></div></div></div></div>
+  <div class="modal" id="textModal"><div class="modal-card text-card"><div class="modal-head"><div><div class="eyebrow">CONTRACT TEXT</div><h2>合同原文</h2></div><button id="closeTextModal">×</button></div><div class="text-viewer" id="textViewer"></div></div></div>
+  <script src="app.js"></script>
+</body>
+</html>

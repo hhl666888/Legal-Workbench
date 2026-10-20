@@ -1,0 +1,45 @@
+# ===== 环境与密钥 =====
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# 注意：.env.example 会被提交，但内部必须为占位文本，禁止包含真实 Key
+
+# ===== 运行时数据 =====
+data/
+!data/.gitkeep
+
+# ===== Node 依赖 =====
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ===== 日志与临时文件 =====
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+tmp/
+*.tmp
+
+# ===== Trae IDE 工作区 =====
+.trae/
+.trae-cn/
+
+# ===== 编辑器/系统 =====
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ===== 其他 =====
+*.swp
+*.swo
+*~
+.directory

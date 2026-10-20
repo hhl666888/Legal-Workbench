@@ -1,0 +1,69 @@
+{
+  "name": "合同审阅智能体",
+  "version": "1.0.0",
+  "description": "面向公司法务的合同全文审查与法律引用审查工作流。企业风险核查暂时关闭。",
+  "feature_flags": { "enterprise_risk_check": false },
+  "inputs": {
+    "wenjian": { "type": "file", "required": true, "description": "合同文件：doc/docx/pdf/txt（以平台支持类型为准）" },
+    "xuqiu": { "type": "text", "required": false, "default": "请全面审查合同中的问题和风险，并给出具体修改建议。" }
+  },
+  "variables": [
+    "wenjian", "xuqiu", "contract_text", "normal_review", "legal_review",
+    "company", "contract_title", "company_info", "abnormal_info", "company_risk", "result"
+  ],
+  "nodes": [
+    { "id": "start", "type": "start", "label": "开始", "outputs": ["wenjian", "xuqiu"] },
+    {
+      "id": "read_file", "type": "file_reader", "label": "流程1：文件读取",
+      "config": { "file": "{{wenjian}}", "output": "contract_text", "on_error": "合同文件读取失败，暂无法进行合同审查。\n\n请重新上传可读取的合同文件。", "do_not_guess": true }
+    },
+    {
+      "id": "normal_review", "type": "llm", "label": "流程2：常规合同审查", "model_preference": ["豆包 1.5 Pro 32k", "平台可用高能力模型"],
+      "inputs": { "contract_text": "{{contract_text}}", "xuqiu": "{{xuqiu}}" }, "output": "normal_review",
+      "system_prompt": "你是一位专业的合同审核助手，具备深厚的中国合同法律知识和丰富的企业合同审核经验。\n\n你的任务是对用户提供的合同进行系统、全面、专业的风险审查，服务于企业法务实际决策。请逐条阅读全文，不要只看标题。重点判断主体、效力、权利义务、付款、交付、验收、违约、赔偿、解除、自动续约、保密、知识产权、数据安全、争议解决、管辖、责任限制、条款冲突与歧义、关键事项缺失、时间和金额逻辑、表述不明确及法律法规引用等风险。不要为了增加数量而挑错；普通文字瑕疵不得描述为重大法律风险。\n\n对每个真实问题按以下格式输出：\n### 问题N：XXX\n**风险程度：** 高风险 / 中风险 / 低风险 / 文本问题\n**合同依据：** 条款编号、标题或原文摘录；找不到依据时写“合同中未明确”。\n**问题分析：** 解释风险成因。\n**可能影响：** 说明对企业的实际影响。\n**修改建议：** 给出可直接执行的修改方案。\n\n输出结构：\n# 合同基本判断\n# 问题与风险（按重要程度排序）\n# 整体风险总结\n1. 最大风险\n2. 重点修改事项\n3. 可以接受的普通问题\n4. 签署前必须确认的事项\n\n严禁编造合同不存在的内容或条款。法律判断谨慎；不确定事项明确写“需要进一步人工确认”。优先识别真正影响企业权益的风险。"
+    },
+    {
+      "id": "legal_review", "type": "llm", "label": "流程3：法律引用条例审查", "inputs": { "contract_text": "{{contract_text}}" }, "output": "legal_review",
+      "system_prompt": "你是一名专业的中国法律法规审查助手。请仔细阅读合同全文，专门提取合同中涉及、引用、提及或者明显依据的法律法规、规章、司法解释及其他规范性法律文件；不要进行普通合同风险审查。重点检查法律名称、具体条文、有效性、是否废止或被替代、名称准确性、与当前中国法律体系及合同条款是否匹配。特别留意《担保法》《合同法》《经济合同法》《物权法》《侵权责任法》《民法总则》《民法典》等。\n\n每项按以下格式输出：\n《法律名称》：\n合同中具体提及/引用的内容：\n法律状态：现行有效 / 已废止 / 已被替代 / 存在争议 / 需要进一步确认\n审查结果：说明是否存在问题及依据。\n修改建议：给出建议使用的法律名称或表述。\n\n若没有明确引用，严格输出：未发现合同中存在明确的法律法规引用。严禁虚构引用。"
+    },
+    {
+      "id": "parse_meta", "type": "llm", "label": "流程4：解析合同标题 + 甲方公司名称", "inputs": { "contract_text": "{{contract_text}}" }, "outputs": ["company", "contract_title"],
+      "system_prompt": "你是数据解析专家。请从合同文本中准确提取甲方公司名称和合同标题。公司名称必须是合同中实际出现的名称，不得推测、改写或补充；没有明确甲方名称时返回空字符串。标题优先使用正文正式标题。严格只输出合法 JSON，不要 Markdown：{\"company\":\"\",\"contract_title\":\"\"}"
+    },
+    { "id": "company_present", "type": "if", "label": "判断公司名称是否为空", "condition": "trim({{company}}) != ''", "true": "company_lookup", "false": "company_empty" },
+    { "id": "company_empty", "type": "text", "label": "甲方公司名称为空", "value": "甲方公司名称为空", "output": "company_risk" },
+    {
+      "id": "company_lookup", "type": "http_or_plugin", "label": "流程4.1：查询企业信息", "manual_adapter": true,
+      "config": { "keyword": "{{company}}", "success_output": "company_info", "not_found_output": "", "error_output": "__QUERY_ERROR__", "preserve_workflow_on_error": true }
+    },
+    { "id": "company_exists", "type": "if", "label": "判断企业是否存在", "condition": "company_info != '' AND company_info.found == true", "true": "abnormal_lookup", "false": "company_not_found" },
+    { "id": "company_not_found", "type": "text", "label": "查不到该公司", "template": "查不到该公司：{{company}}", "output": "company_risk" },
+    {
+      "id": "abnormal_lookup", "type": "http_or_plugin", "label": "流程4.2：企业经营异常核查", "manual_adapter": true,
+      "config": { "keyword": "{{company}}", "pageNum": 1, "pageSize": 10, "success_output": "abnormal_info", "error_output": "__QUERY_ERROR__", "preserve_workflow_on_error": true }
+    },
+    {
+      "id": "company_risk", "type": "llm", "label": "流程4.3：企业风险总结", "skip_if": "company_risk already set by company_empty/company_not_found OR lookup error", "inputs": { "company": "{{company}}", "company_info": "{{company_info}}", "abnormal_info": "{{abnormal_info}}" }, "output": "company_risk",
+      "system_prompt": "你是一名企业风险分析专家。只能依据提供的企业基本信息和经营异常数据分析，不得编造，不得因字段缺失而推测。没有发现异常时明确说明；数据不足时写“现有数据不足以判断”。输出：# 企业风险总结\n## 风险类型\n## 风险程度（高 / 中 / 低 / 未发现明显风险）及判断依据\n## 可能产生的影响（合同履约、付款、经营稳定性、合作持续性、争议解决）\n## 建议。若未发现经营异常，必须包含：“根据当前查询数据，未发现明显的经营异常信息，但建议在合同签署前结合最新企业信息进行最终核验。”"
+    },
+    { "id": "query_error_fallback", "type": "text", "label": "企业查询失败容错", "value": "企业信息查询失败，暂无法完成企业风险核查。\n\n建议法务人员通过企业官方信息及权威企业信息平台进行人工核验。", "output": "company_risk", "when": "company_lookup or abnormal_lookup == __QUERY_ERROR__" },
+    {
+      "id": "aggregate", "type": "code", "label": "数据汇总", "inputs": { "normal_review": "{{normal_review}}", "legal_review": "{{legal_review}}", "company_risk": "{{company_risk}}" }, "output": "result",
+      "code": "const title = (contract_title || '合同审查').trim();\nreturn { result: `# ${title}问题与风险\\n\\n## 一、常规审查结果\\n\\n${normal_review || '未生成常规审查结果。'}\\n\\n## 二、法律引用条例审查结果\\n\\n${legal_review || '未生成法律引用审查结果。'}\\n\\n## 三、企业风险总结\\n\\n${company_risk || '企业风险信息未提供。'}\\n\\n## 四、签署前重点事项\\n\\n请根据前三部分，仅列出签署前必须确认或修改的事项。` };"
+    },
+    {
+      "id": "final_report", "type": "llm", "label": "生成最终合同风险报告", "inputs": { "draft": "{{result}}" }, "output": "final_output",
+      "system_prompt": "你是企业法务报告编辑。请将输入草稿整理为可交付的《合同问题与风险》报告，保留三大部分：常规审查、法律引用条例审查、企业风险总结，并补充“签署前重点事项”。保持条款依据、风险分级（高风险/中风险/低风险/文本问题）、风险原因和可执行修改建议；不得新增草稿中没有的事实。若信息不足，明确标注需要人工确认。使用清晰的 Markdown 层级。"
+    },
+    { "id": "output", "type": "output", "label": "合同审查结果上传/输出", "value": "{{final_output}}" },
+    { "id": "end", "type": "end", "label": "结束" }
+  ],
+  "edges": [
+    ["start", "read_file"], ["read_file", "normal_review"], ["read_file", "legal_review"], ["read_file", "parse_meta"],
+    ["parse_meta", "company_present"], ["company_present.true", "company_lookup"], ["company_present.false", "company_empty"],
+    ["company_lookup", "company_exists"], ["company_exists.true", "abnormal_lookup"], ["company_exists.false", "company_not_found"],
+    ["abnormal_lookup", "company_risk"], ["company_lookup.error", "query_error_fallback"], ["abnormal_lookup.error", "query_error_fallback"],
+    ["normal_review", "aggregate"], ["legal_review", "aggregate"], ["company_empty", "aggregate"], ["company_not_found", "aggregate"], ["company_risk", "aggregate"], ["query_error_fallback", "aggregate"],
+    ["aggregate", "final_report"], ["final_report", "output"], ["output", "end"]
+  ]
+}
